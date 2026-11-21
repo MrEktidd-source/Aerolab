@@ -41896,7 +41896,7 @@ h1, h2, h3 {
 </style>
 """, unsafe_allow_html=True)
 
-st.title("✈️ AeroLab | Performance de aeronaves")
+st.title("✈️ Proyecto | Desempeño de aeronaves")
 st.subheader("La Ingeniería de una Aeronave en Performance")
 
 st.caption(
@@ -43487,11 +43487,6 @@ report_html = f"""<!doctype html>
 st.download_button(
     label="Descargar informe técnico HTML",
     data=report_html.encode("utf-8"),
-    file_name="AeroLab_informe_tecnico.html",
+    file_name="Proyecto_informe_tecnico.html",
     mime="text/html"
-)
-
-st.caption(
-    "AeroLab Performance | Herramienta educativa. "
-    "No usar para despacho, certificación ni operación de vuelo."
 )
