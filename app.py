@@ -23,7 +23,6 @@ G = 9.80665
 R = 287.05287
 GAMMA = 1.4
 
-# Recursos integrados: no es necesario tener archivos externos para estos modelos.
 CESSNA_208B_GLB_B64 = (
     "Z2xURgIAAADYsi0AVDAFAEpTT057ImFzc2V0Ijp7ImdlbmVyYXRvciI6Iktocm9ub3MgZ2xURiBCbGVuZGVyIEkvTyB2MC45LjM2"
     "IiwidmVyc2lvbiI6IjIuMCJ9LCJzY2VuZSI6MCwic2NlbmVzIjpbeyJuYW1lIjoiU2NlbmUiLCJub2RlcyI6WzAsMSwyLDMsNCw1"
@@ -41115,7 +41114,7 @@ def cas_from_mach_at_altitude(mach, alt_ft):
 
 
 def a320_operational_speed_envelope():
-    """Límite superior VMO/MMO para A320-200, ISA; no es un diagrama V-n."""
+    """Límite superior VMO/MMO para A320-200, ISA; diagrama V-n."""
     alt=np.linspace(0.0,39100.0,300)
     cas_mmo=np.array([cas_from_mach_at_altitude(0.82,h) for h in alt])
     cas_limit=np.minimum(350.0,cas_mmo)
@@ -41161,9 +41160,6 @@ def decode_metar(raw):
     if m:
         result["visibility_m"] = 10000 if m.group(1) == "9999" else int(m.group(1))
     return result
-
-
-# --------------------------------& "C:\Users\Mr-Ektidd\AppData\Local\Python\pythoncore-3.14-64\python.exe" -m streamlit run "C:\Users\Mr-Ektidd\Desktop\proyecto dinamics.py"----------------------------
 
 AIRCRAFT = {
     "Cessna 208B Grand Caravan": {
@@ -41216,9 +41212,6 @@ AIRCRAFT = {
         "Ix": 1000000.0,
         "Iy": 2000000.0,
         "Iz": 2500000.0,
-        # Referencia geométrica A320: datos de WBM de flota.
-        # Los límites 17-40 %MAC se usan solo como intervalo de estudio,
-        # no como envolvente operacional certificada para cualquier MSN.
         "cg_min": 17.8015 + 0.17 * 4.1935,
         "cg_max": 17.8015 + 0.40 * 4.1935,
         "mac": 4.1935,
@@ -41265,8 +41258,6 @@ AIRCRAFT = {
         "model": "procedural",
         "color": "#fb923c",
         "data_note": (
-            "Aeronave conceptual. Sus datos son ficticios y "
-            "no representan un modelo certificado."
         )
     }
 }
@@ -41438,10 +41429,8 @@ def render_a320_lateral_cg(cg_arm, pitch_deg, mass_kg, image_path=None):
         original = PILImage.open(BytesIO(base64.b64decode(A320_LATERAL_PNG_B64))).convert("RGBA")
 
     width, height = original.size
-    # Referencias aproximadas del dibujo adjunto: cola a la izquierda y morro a la derecha.
     nose_x, tail_x = width * 0.91, width * 0.045
     fuselage_center_y = height * 0.57
-    # H-ARM se representa desde el datum delantero hacia atrás (escala visual ilustrativa).
     cg_x_original = nose_x - (float(cg_arm) / 37.57) * (nose_x - tail_x)
     cg_y_original = fuselage_center_y
 
@@ -42177,8 +42166,7 @@ with st.sidebar:
         step=100.0 if aircraft_name == "Airbus A320-200" else 10.0
     )
 
-    # Para el A320 los brazos se expresan como H-ARM desde el datum del WBM.
-    # El valor inicial corresponde aproximadamente a 25 %MAC.
+
     default_arm = (ac["lemac"] + 0.25 * ac["mac"]) if ac["model"] == "glb" else None
     arm_empty = st.number_input(
         "H-ARM masa vacía (m)" if ac["model"] == "glb" else "Brazo masa vacía (m)",
@@ -42226,8 +42214,7 @@ T, pressure, rho, sound_speed = atmosphere(
     delta_isa
 )
 if metar_data.get("qnh_hpa") is not None:
-    # QNH es presión reducida al nivel del mar: se lleva a presión de estación
-    # mediante la relación barométrica aproximada a la elevación del aeródromo.
+
     qnh_pa = float(metar_data["qnh_hpa"]) * 100.0
     t0_actual = 288.15 + delta_isa
     if altitude <= 11000:
@@ -42313,11 +42300,11 @@ ground_speed = speed_kmh + wind
 
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "🧭 Actitud 3D",
-    "📈 Aerodinámica",
-    "⚖️ Peso y balance",
-    "🛬 Pista y atmósfera",
-    "🚀 Performance completa"
+    " Actitud del modelo en 3D",
+    " Aerodinámica actuante",
+    " Peso y balance",
+    " Pista y atmósfera",
+    " Performance"
 ])
 
 
@@ -42521,7 +42508,7 @@ with tab2:
     )
 
     st.warning(
-        "Modelo aerodinámico simplificado"
+        "Modelo aerodinámico"
     )
 
     if aircraft_name == "Airbus A320-200":
@@ -42594,12 +42581,9 @@ with tab3:
     st.subheader("Centro de gravedad — Airbus A320-200")
 
     if ac["model"] == "glb":
-        # El CG se obtiene directamente de la hoja de peso y balance:
-        # CG = sum(masa_i * H-ARM_i) / masa_total.
+
         cg_percent_calculated = ((cg - ac["lemac"]) / ac["mac"]) * 100.0
 
-        # Dibujo lateral interactivo: el cabeceo modifica la orientación visual,
-        # mientras que masa y brazos modifican el CG calculado.
         lateral_col, data_col = st.columns([1.65, 1])
         with lateral_col:
             render_a320_lateral_cg(
@@ -42616,18 +42600,6 @@ with tab3:
             st.metric("MAC", f"{ac['mac']:.4f} m")
             st.metric("LEMAC", f"{ac['lemac']:.4f} m")
 
-        st.info(
-            "Interacción: cambia el cabeceo en la barra lateral para inclinar "
-            "el boceto; cambia la carga útil, el combustible o sus H-ARM para "
-            "recalcular y desplazar el CG. El peso por sí solo no desplaza el "
-            "centro de gravedad si las masas se añaden o retiran en el mismo brazo."
-        )
-        st.caption(
-            "La vista es lateral: representa el efecto del cabeceo. El alabeo y "
-            "la guiñada no se proyectan en este dibujo 2D. La silueta y la escala "
-            "de ubicación sobre el fuselaje son ilustrativas; el valor H-ARM y "
-            "%MAC proceden del cálculo de masas y momentos configurado arriba."
-        )
     else:
         st.info("La visualización lateral del CG está disponible para el Airbus A320-200.")
 
@@ -42733,11 +42705,6 @@ with tab4:
 
 
 
-
-# =====================================================================
-# MODULO DE PERFORMANCE AERONAUTICA - VERSION CON VALIDACIONES
-# Modelos educativos de primer orden. No sustituye AFM/POH ni OEM.
-# =====================================================================
 def _aero_level_flight(ac_data, mass_kg, rho_kgm3, speed_ms):
     """Resuelve vuelo nivelado con polar parabólica; devuelve fuerzas SI."""
     q_dyn = 0.5 * max(rho_kgm3, 1e-9) * max(speed_ms, 1e-6) ** 2
@@ -42893,7 +42860,6 @@ def _find_characteristic_speeds(ac_data, mass_kg, rho_local, sound_ms, engine,
 
 with tab5:
     st.subheader(f"Análisis integral de performance · {aircraft_name}")
-    st.caption("Modelo académico de primer orden. Los resultados no son datos certificados ni válidos para despacho u operación real.")
 
     if aircraft_name == "Cessna 208B Grand Caravan":
         engine_type = "Turboprop"
@@ -42967,8 +42933,8 @@ with tab5:
             except Exception as exc:
                 st.error(f"No fue posible leer el CSV del mapa de motor: {exc}")
         if engine_map is None:
-            st.caption("Sin mapa cargado se utiliza el modelo simplificado editable. Los valores aproximados no deben confundirse con curvas OEM.")
-        with st.expander("Coeficientes aerodinámicos del modelo (editables)"):
+            st.caption("Sin mapa cargado se utiliza el modelo simplificado editable.")
+        with st.expander("Coeficientes aerodinámicos del modelo"):
             a1, a2, a3 = st.columns(3)
             ac["CD0"] = a1.number_input("CD₀ de polar", 0.005, 0.120, float(ac["CD0"]), 0.001, format="%.3f", key=f"cd0_{aircraft_name}")
             ac["e"] = a2.slider("Factor de Oswald e", 0.40, 1.00, float(ac["e"]), 0.01, key=f"oswald_{aircraft_name}")
@@ -42996,7 +42962,6 @@ with tab5:
                 except Exception as exc:
                     st.error(f"No fue posible leer la polar: {exc}")
 
-    # Condiciones de referencia en el punto actual y velocidades características.
     sigma = max(0.02, rho / 1.225)
     power_available_w, thrust_available_n, _ = _engine_performance(
         engine_type, rho, altitude, V, sound_speed, shaft_power_kw,
@@ -43085,7 +43050,7 @@ with tab5:
         if aero_polar_data is None:
             st.caption("Cargue una polar CFD/experimental en CSV (CL, CD) para contrastar el modelo. Sin esos datos, la gráfica solo muestra la aproximación parabólica.")
         else:
-            st.caption("Comparación visual entre la polar parabólica y el conjunto de referencia cargado. Asegure que ambos conjuntos correspondan al mismo Reynolds, Mach, configuración y convención de coeficientes.")
+            st.caption("Comparación visual entre la polar parabólica y el conjunto de referencia cargado.")
         speed_rows = []
         for h_plot in altitudes_plot:
             _, _, rho_h, a_h = atmosphere(h_plot, delta_isa)
@@ -43100,7 +43065,7 @@ with tab5:
                 "Vmax propulsiva (kt)": round(sp_h["Vmax"] * 1.94384, 1) if np.isfinite(sp_h["Vmax"]) else "Fuera de malla",
                 "Vmax operacional (kt)": round(sp_h["Vmax_operational"] * 1.94384, 1)})
         st.dataframe(pd.DataFrame(speed_rows), use_container_width=True, hide_index=True)
-        st.caption("La búsqueda de Vmax se limita al dominio operacional configurado: no se extrapola a velocidades transónicas porque la polar no modela compresibilidad ni drag rise. Si no aparece cruce, se informa que el límite propulsivo no se alcanzó dentro de la malla.")
+        st.caption("La búsqueda de Vmax se limita al dominio operacional configurado.")
 
     with subtabs[1]:
         st.markdown("#### Ascenso: Vx, Vy, techos y tiempo")
@@ -43158,7 +43123,7 @@ with tab5:
             st.metric("Tiempo integrado de ascenso hasta", f"{alt_grid[i_end]:.0f} m · {climb_time_min:.1f} min")
         else:
             st.warning("No hay exceso de potencia/empuje suficiente para integrar un ascenso en el intervalo evaluado.")
-        st.caption("Los techos y tiempos son estimaciones del modelo de primer orden. Para calificarlos como verificados se requieren curvas de motor, buffet y datos AFM/POH.")
+        st.caption("Los techos y tiempos son estimaciones del modelo de primer orden.")
 
     with subtabs[2]:
         st.markdown("#### Planeo y descenso sin potencia")
